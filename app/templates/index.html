@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英雄识别</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 40px 0; }
+        h1 { font-size: 2rem; background: linear-gradient(90deg, #f0c419, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: #888; margin-top: 10px; }
+        .card { background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .upload-area { border: 2px dashed rgba(240, 196, 25, 0.5); border-radius: 12px; padding: 60px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: #f0c419; background: rgba(240, 196, 25, 0.1); }
+        .upload-area input { display: none; }
+        .upload-icon { font-size: 48px; margin-bottom: 10px; }
+        .btn { padding: 12px 24px; border-radius: 8px; border: none; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(90deg, #f0c419, #ff6b6b); color: #1a1a2e; font-weight: bold; width: 100%; margin-top: 20px; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(240, 196, 25, 0.4); }
+        .result { text-align: center; padding: 30px; display: none; }
+        .result.active { display: block; }
+        .result .hero-name { font-size: 2.5rem; font-weight: bold; color: #f0c419; margin: 20px 0; }
+        .result .similarity { font-size: 1.2rem; color: #4ade80; }
+        .loading { text-align: center; padding: 40px; display: none; }
+        .loading.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 英雄识别</h1>
+            <p class="subtitle">上传英雄头像图片，自动识别英雄名称</p>
+        </header>
+        
+        <div class="card">
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="upload-icon">📁</div>
+                <p id="upload-text">点击上传英雄头像图片</p>
+                <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                <input type="file" id="file-input" accept="image/*">
+            </div>
+            <button class="btn btn-primary" onclick="recognizeHero()">识别英雄</button>
+            
+            <div class="result" id="result">
+                <h3>识别结果</h3>
+                <div class="hero-name" id="hero-name">-</div>
+                <div class="similarity" id="similarity">-</div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>🔄 正在识别...</p>
+        </div>
+    </div>
+    
+    <script>
+        async function recognizeHero() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择英雄头像图片');
+                return;
+            }
+            
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('result').classList.remove('active');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/hero-recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('hero-name').textContent = data.hero || '-';
+                    document.getElementById('similarity').textContent = '相似度: ' + data.similarity + '%';
+                    document.getElementById('result').classList.add('active');
+                } else {
+                    alert('识别失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('识别失败: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+        
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('upload-text').textContent = '已选择: ' + e.target.files[0].name;
+            }
+        });
+    </script>
+</body>
+</html>
