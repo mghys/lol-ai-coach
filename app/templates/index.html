@@ -3,14 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英雄识别</title>
+    <title>AI教练</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         header { text-align: center; padding: 40px 0; }
         h1 { font-size: 2rem; background: linear-gradient(90deg, #f0c419, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .subtitle { color: #888; margin-top: 10px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.3s; text-align: center; }
+        .tab:hover { background: rgba(255, 255, 255, 0.1); }
+        .tab.active { background: linear-gradient(90deg, #f0c419, #ff6b6b); color: #1a1a2e; font-weight: bold; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
         .card { background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
         .upload-area { border: 2px dashed rgba(240, 196, 25, 0.5); border-radius: 12px; padding: 60px; text-align: center; cursor: pointer; transition: all 0.3s; }
         .upload-area:hover { border-color: #f0c419; background: rgba(240, 196, 25, 0.1); }
@@ -25,39 +34,169 @@
         .result .similarity { font-size: 1.2rem; color: #4ade80; }
         .loading { text-align: center; padding: 40px; display: none; }
         .loading.active { display: block; }
+        
+        .game-result { padding: 30px; display: none; }
+        .game-result.active { display: block; }
+        .win-banner { font-size: 2rem; font-weight: bold; margin-bottom: 20px; padding: 20px; border-radius: 12px; text-align: center; }
+        .win-banner.victory { background: linear-gradient(90deg, #4ade80, #22c55e); color: #1a1a2e; }
+        .win-banner.defeat { background: linear-gradient(90deg, #ef4444, #dc2626); color: #fff; }
+        .team-section { margin-top: 20px; }
+        .team-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
+        .ally-team .team-title { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .enemy-team .team-title { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .player-card { background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .player-champion { font-weight: bold; color: #f0c419; flex: 1; }
+        .player-kda { color: #888; flex: 1; text-align: right; }
+        .player-kda .kills { color: #4ade80; }
+        .player-kda .deaths { color: #ef4444; }
+        .player-kda .assists { color: #60a5fa; }
+        .no-data { text-align: center; color: #888; padding: 20px; }
+        
+        .pick-result { padding: 20px; }
+        .heroes-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .hero-badge { background: rgba(240, 196, 25, 0.2); color: #f0c419; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; }
+        .blue-team .team-title { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .red-team .team-title { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        
+        .debug-area { text-align: center; overflow: auto; max-height: 90vh; }
+        .debug-area img { max-width: 100%; cursor: crosshair; border-radius: 8px; }
+        .coord-display { margin-top: 15px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; font-family: monospace; }
+        .coord-display span { color: #f0c419; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎮 英雄识别</h1>
-            <p class="subtitle">上传英雄头像图片，自动识别英雄名称</p>
+            <h1>🎮 AI教练</h1>
+            <p class="subtitle">智能识别英雄和对局结果</p>
         </header>
         
-        <div class="card">
-            <div class="upload-area" onclick="document.getElementById('file-input').click()">
-                <div class="upload-icon">📁</div>
-                <p id="upload-text">点击上传英雄头像图片</p>
-                <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
-                <input type="file" id="file-input" accept="image/*">
-            </div>
-            <button class="btn btn-primary" onclick="recognizeHero()">识别英雄</button>
-            
-            <div class="result" id="result">
-                <h3>识别结果</h3>
-                <div class="hero-name" id="hero-name">-</div>
-                <div class="similarity" id="similarity">-</div>
+        <div class="tabs">
+            <div class="tab" onclick="switchTab('hero')">英雄识别</div>
+            <div class="tab" onclick="switchTab('pick')">选人识别</div>
+            <div class="tab" onclick="switchTab('game')">对局结果</div>
+            <div class="tab" onclick="switchTab('debug')">坐标调试</div>
+        </div>
+        
+        <div id="hero-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传英雄头像图片，自动识别英雄名称</p>
+                <div class="upload-area" onclick="document.getElementById('hero-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="hero-upload-text">点击上传英雄头像图片</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="hero-file-input" accept="image/*">
+                </div>
+                <button class="btn btn-primary" onclick="recognizeHero()">识别英雄</button>
+                
+                <div class="result" id="hero-result">
+                    <h3>识别结果</h3>
+                    <div class="hero-name" id="hero-name">-</div>
+                    <div class="similarity" id="hero-similarity">-</div>
+                </div>
             </div>
         </div>
         
-        <div class="loading" id="loading">
+        <div id="pick-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传选人界面截图，识别可选英雄和已选英雄</p>
+                <div class="upload-area" onclick="document.getElementById('pick-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="pick-upload-text">点击上传选人界面截图</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="pick-file-input" accept="image/*">
+                </div>
+                <button class="btn btn-primary" onclick="recognizePickPhase()">识别选人阶段</button>
+                
+                <div class="pick-result" id="pick-result" style="display: none;">
+                    <div class="team-section blue-team" style="margin-top: 20px;">
+                        <div class="team-title">已选英雄</div>
+                        <div id="blue-team-list"></div>
+                    </div>
+                    
+                    <div class="team-section" style="margin-top: 20px;">
+                        <div class="team-title" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">可选英雄</div>
+                        <div id="available-list" class="heroes-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="debug-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传图片后点击任意位置获取坐标</p>
+                <div class="upload-area" onclick="document.getElementById('debug-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="debug-upload-text">点击上传图片</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="debug-file-input" accept="image/*">
+                </div>
+                
+                <div class="debug-area" id="debug-area" style="display: none; margin-top: 20px;">
+                    <img id="debug-image" onclick="showCoord(event)">
+                </div>
+                
+                <div class="coord-display" id="coord-display" style="display: none;">
+                    点击坐标: X=<span id="coord-x">0</span>, Y=<span id="coord-y">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="game-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传对局结束截图，自动提取胜负结果、英雄和KDA</p>
+                <div class="upload-area" onclick="document.getElementById('game-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="game-upload-text">点击上传对局结束截图</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="game-file-input" accept="image/*">
+                </div>
+                <button class="btn btn-primary" onclick="recognizeGameResult()">识别对局结果</button>
+                
+                <div class="game-result" id="game-result">
+                    <div class="win-banner" id="win-banner"></div>
+                    
+                    <div class="team-section ally-team">
+                        <div class="team-title">友方队伍</div>
+                        <div id="ally-team-list"></div>
+                    </div>
+                    
+                    <div class="team-section enemy-team" style="margin-top: 20px;">
+                        <div class="team-title">敌方队伍</div>
+                        <div id="enemy-team-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" id="hero-loading">
             <p>🔄 正在识别...</p>
+        </div>
+        
+        <div class="loading" id="pick-loading">
+            <p>🔄 正在分析选人界面...</p>
+        </div>
+        
+        <div class="loading" id="game-loading">
+            <p>🔄 正在分析对局截图...</p>
         </div>
     </div>
     
     <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            const tabMap = { 'hero': 1, 'pick': 2, 'game': 3, 'debug': 4 };
+            const tabElement = document.querySelector(`.tab:nth-child(${tabMap[tabName]})`);
+            if (tabElement) tabElement.classList.add('active');
+            
+            const contentElement = document.getElementById(`${tabName}-tab`);
+            if (contentElement) contentElement.classList.add('active');
+        }
+        
         async function recognizeHero() {
-            const fileInput = document.getElementById('file-input');
+            const fileInput = document.getElementById('hero-file-input');
             const file = fileInput.files[0];
             
             if (!file) {
@@ -65,8 +204,8 @@
                 return;
             }
             
-            document.getElementById('loading').classList.add('active');
-            document.getElementById('result').classList.remove('active');
+            document.getElementById('hero-loading').classList.add('active');
+            document.getElementById('hero-result').classList.remove('active');
             
             const formData = new FormData();
             formData.append('file', file);
@@ -81,23 +220,204 @@
                 
                 if (data.success) {
                     document.getElementById('hero-name').textContent = data.hero || '-';
-                    document.getElementById('similarity').textContent = '相似度: ' + data.similarity + '%';
-                    document.getElementById('result').classList.add('active');
+                    document.getElementById('hero-similarity').textContent = '相似度: ' + data.similarity + '%';
+                    document.getElementById('hero-result').classList.add('active');
                 } else {
                     alert('识别失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
                 alert('识别失败: ' + error.message);
             } finally {
-                document.getElementById('loading').classList.remove('active');
+                document.getElementById('hero-loading').classList.remove('active');
             }
         }
         
-        document.getElementById('file-input').addEventListener('change', function(e) {
+        document.getElementById('hero-file-input').addEventListener('change', function(e) {
             if (e.target.files[0]) {
-                document.getElementById('upload-text').textContent = '已选择: ' + e.target.files[0].name;
+                document.getElementById('hero-upload-text').textContent = '已选择: ' + e.target.files[0].name;
             }
         });
+        
+        async function recognizePickPhase() {
+            const fileInput = document.getElementById('pick-file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择选人界面截图');
+                return;
+            }
+            
+            document.getElementById('pick-loading').classList.add('active');
+            document.getElementById('pick-result').style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/pick-phase-recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPickResult(data);
+                    document.getElementById('pick-result').style.display = 'block';
+                } else {
+                    alert('识别失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('识别失败: ' + error.message);
+            } finally {
+                document.getElementById('pick-loading').classList.remove('active');
+            }
+        }
+        
+        function displayPickResult(data) {
+            const blueList = document.getElementById('blue-team-list');
+            blueList.innerHTML = data.blue_side && data.blue_side.length > 0 
+                ? data.blue_side.map(h => `<span class="hero-badge">${h}</span>`).join('')
+                : '<div class="no-data">未识别到已选英雄</div>';
+            
+            const availableList = document.getElementById('available-list');
+            availableList.innerHTML = data.available_heroes && data.available_heroes.length > 0
+                ? data.available_heroes.map(h => `<span class="hero-badge">${h}</span>`).join('')
+                : '<div class="no-data">未识别到可选英雄</div>';
+        }
+        
+        document.getElementById('pick-file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('pick-upload-text').textContent = '已选择: ' + e.target.files[0].name;
+            }
+        });
+        
+        async function recognizeGameResult() {
+            const fileInput = document.getElementById('game-file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择对局结束截图');
+                return;
+            }
+            
+            document.getElementById('game-loading').classList.add('active');
+            document.getElementById('game-result').classList.remove('active');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/game-result-recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayGameResult(data);
+                    document.getElementById('game-result').classList.add('active');
+                } else {
+                    alert('识别失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('识别失败: ' + error.message);
+            } finally {
+                document.getElementById('game-loading').classList.remove('active');
+            }
+        }
+        
+        function displayGameResult(data) {
+            const winBanner = document.getElementById('win-banner');
+            if (data.win === true) {
+                winBanner.textContent = '胜利!';
+                winBanner.className = 'win-banner victory';
+            } else if (data.win === false) {
+                winBanner.textContent = '失败';
+                winBanner.className = 'win-banner defeat';
+            } else {
+                winBanner.textContent = '胜负未识别';
+                winBanner.className = 'win-banner';
+                winBanner.style.background = 'rgba(255, 255, 255, 0.1)';
+            }
+            
+            const allyList = document.getElementById('ally-team-list');
+            allyList.innerHTML = '';
+            if (data.ally_team && data.ally_team.length > 0) {
+                data.ally_team.forEach(player => {
+                    const playerCard = createPlayerCard(player);
+                    allyList.appendChild(playerCard);
+                });
+            } else {
+                allyList.innerHTML = '<div class="no-data">未识别到友方队伍信息</div>';
+            }
+            
+            const enemyList = document.getElementById('enemy-team-list');
+            enemyList.innerHTML = '';
+            if (data.enemy_team && data.enemy_team.length > 0) {
+                data.enemy_team.forEach(player => {
+                    const playerCard = createPlayerCard(player);
+                    enemyList.appendChild(playerCard);
+                });
+            } else {
+                enemyList.innerHTML = '<div class="no-data">未识别到敌方队伍信息</div>';
+            }
+        }
+        
+        function createPlayerCard(player) {
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            
+            const champion = document.createElement('div');
+            champion.className = 'player-champion';
+            champion.textContent = player.champion || '未识别';
+            
+            const kda = document.createElement('div');
+            kda.className = 'player-kda';
+            kda.innerHTML = `<span class="kills">${player.kills || 0}</span> / <span class="deaths">${player.deaths || 0}</span> / <span class="assists">${player.assists || 0}</span>`;
+            
+            card.appendChild(champion);
+            card.appendChild(kda);
+            
+            return card;
+        }
+        
+        document.getElementById('game-file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('game-upload-text').textContent = '已选择: ' + e.target.files[0].name;
+            }
+        });
+        
+        document.getElementById('debug-file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('debug-upload-text').textContent = '已选择: ' + e.target.files[0].name;
+                
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('debug-image').src = event.target.result;
+                    document.getElementById('debug-area').style.display = 'block';
+                    document.getElementById('coord-display').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function showCoord(event) {
+            const img = event.target;
+            const rect = img.getBoundingClientRect();
+            
+            const scaleX = img.naturalWidth / rect.width;
+            const scaleY = img.naturalHeight / rect.height;
+            
+            const x = Math.round((event.clientX - rect.left) * scaleX);
+            const y = Math.round((event.clientY - rect.top) * scaleY);
+            
+            document.getElementById('coord-x').textContent = x;
+            document.getElementById('coord-y').textContent = y;
+            document.getElementById('coord-display').style.display = 'block';
+        }
     </script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import os
 import uuid
 
 from app.services.hero_recognizer import recognize_hero
+from app.services.ocr_service import process_screenshot
 from config import UPLOAD_DIR
 
 app = FastAPI(title="英雄识别")
@@ -34,4 +35,43 @@ async def recognize_hero_image(file: UploadFile = File(...)):
         "success": True,
         "hero": results[0]["hero"] if results else None,
         "similarity": results[0]["similarity"] if results else 0
+    }
+
+@app.post("/game-result-recognize")
+async def recognize_game_result(file: UploadFile = File(...)):
+    file_ext = os.path.splitext(file.filename)[1]
+    filename = f"game_{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    
+    results = process_screenshot(file_path)
+    
+    return {
+        "success": True,
+        "win": results.get("win"),
+        "ally_team": results.get("ally_team", []),
+        "enemy_team": results.get("enemy_team", []),
+        "detected_champions": results.get("detected_champions", [])
+    }
+
+@app.post("/pick-phase-recognize")
+async def recognize_pick_phase(file: UploadFile = File(...)):
+    file_ext = os.path.splitext(file.filename)[1]
+    filename = f"pick_{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    
+    from app.services.pick_phase_service import recognize_pick_phase_heroes
+    results = recognize_pick_phase_heroes(file_path)
+    
+    return {
+        "success": True,
+        "available_heroes": results.get("available_heroes", []),
+        "blue_side": results.get("blue_side", [])
     }
