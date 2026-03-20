@@ -52,9 +52,9 @@ def save_temp_crop(cropped, hero_idx) -> str:
     cv2.imwrite(temp_path, cropped)
     return temp_path
 
-def recognize_hero_from_crop(cropped, hero_idx: str, zone_type: str = "normal") -> list:
+def recognize_hero_from_crop(cropped, hero_idx: str) -> list:
     temp_path = save_temp_crop(cropped, hero_idx)
-    results = recognize_hero(temp_path, zone_type=zone_type)
+    results = recognize_hero(temp_path)
     
     if os.path.exists(temp_path):
         os.remove(temp_path)
@@ -89,8 +89,8 @@ def recognize_pick_phase_heroes(image_path: str) -> dict:
                 debug_path = os.path.join(DEBUG_SELECTED_DIR, f"blue_{idx}.png")
                 cv2.imwrite(debug_path, cropped)
             
-            results = recognize_hero_from_crop(cropped, f"blue_{idx}", zone_type="selected")
-            if results and results[0]["similarity"] > 60:
+            results = recognize_hero_from_crop(cropped, f"blue_{idx}")
+            if results:
                 blue_side.append(results[0]["hero"])
     
     for idx, pos in enumerate(PICK_PHASE_POSITIONS["available"]):
@@ -100,8 +100,8 @@ def recognize_pick_phase_heroes(image_path: str) -> dict:
                 debug_path = os.path.join(DEBUG_AVAILABLE_DIR, f"available_{idx}.png")
                 cv2.imwrite(debug_path, cropped)
             
-            results = recognize_hero_from_crop(cropped, f"available_{idx}", zone_type="normal")
-            if results and results[0]["similarity"] > 60:
+            results = recognize_hero_from_crop(cropped, f"available_{idx}")
+            if results:
                 hero_name = results[0]["hero"]
                 if hero_name.lower() != "empty":
                     available_heroes.append(hero_name)

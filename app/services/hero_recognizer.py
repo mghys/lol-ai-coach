@@ -161,16 +161,14 @@ class HeroRecognizer:
             results[hero_name] = similarity
         
         if zone_type == "selected":
-            best_normal = max(results.values()) if results else 0
-            if best_normal < 0.6:
-                processed_img = self._extract_80px_circle(input_img)
-                if processed_img is not None:
-                    for hero_name, template in self.checked_templates.items():
-                        similarity = self._compute_similarity(processed_img, template)
-                        if hero_name in results:
-                            results[hero_name] = max(results[hero_name], similarity)
-                        else:
-                            results[hero_name] = similarity
+            processed_img = self._extract_80px_circle(input_img)
+            if processed_img is not None:
+                for hero_name, template in self.checked_templates.items():
+                    similarity = self._compute_similarity(processed_img, template)
+                    if hero_name in results:
+                        results[hero_name] = max(results[hero_name], similarity)
+                    else:
+                        results[hero_name] = similarity
         
         sorted_results = [
             {"hero": name, "similarity": round(sim * 100, 1)}
