@@ -14,16 +14,16 @@ PICK_PHASE_POSITIONS = {
         ]
     },
     "available": [
-        {"x": 524, "y": 12, "w": 75, "h": 75},
-        {"x": 612, "y": 12, "w": 75, "h": 75},
-        {"x": 700, "y": 12, "w": 75, "h": 75},
-        {"x": 788, "y": 12, "w": 75, "h": 75},
-        {"x": 876, "y": 12, "w": 75, "h": 75},
-        {"x": 964, "y": 12, "w": 75, "h": 75},
-        {"x": 1052, "y": 12, "w": 75, "h": 75},
-        {"x": 1140, "y": 12, "w": 75, "h": 75},
-        {"x": 1228, "y": 12, "w": 75, "h": 75},
-        {"x": 1316, "y": 12, "w": 75, "h": 75},
+        {"x": 527, "y": 15, "w": 75, "h": 75},
+        {"x": 615, "y": 15, "w": 75, "h": 75},
+        {"x": 703, "y": 15, "w": 75, "h": 75},
+        {"x": 791, "y": 15, "w": 75, "h": 75},
+        {"x": 879, "y": 15, "w": 75, "h": 75},
+        {"x": 967, "y": 15, "w": 75, "h": 75},
+        {"x": 1055, "y": 15, "w": 75, "h": 75},
+        {"x": 1143, "y": 15, "w": 75, "h": 75},
+        {"x": 1231, "y": 15, "w": 75, "h": 75},
+        {"x": 1319, "y": 15, "w": 75, "h": 75},
     ]
 }
 
@@ -63,6 +63,7 @@ def recognize_hero_from_crop(cropped, hero_idx: str, zone_type: str = "normal") 
 
 DEBUG_MODE = True
 DEBUG_SELECTED_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'debug_selected')
+DEBUG_AVAILABLE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'debug_available')
 
 def recognize_pick_phase_heroes(image_path: str) -> dict:
     image = cv2.imread(image_path)
@@ -76,6 +77,7 @@ def recognize_pick_phase_heroes(image_path: str) -> dict:
     
     if DEBUG_MODE:
         os.makedirs(DEBUG_SELECTED_DIR, exist_ok=True)
+        os.makedirs(DEBUG_AVAILABLE_DIR, exist_ok=True)
     
     blue_side = []
     available_heroes = []
@@ -94,6 +96,10 @@ def recognize_pick_phase_heroes(image_path: str) -> dict:
     for idx, pos in enumerate(PICK_PHASE_POSITIONS["available"]):
         cropped = crop_hero_icon(image, pos["x"], pos["y"], pos["w"], pos["h"])
         if cropped is not None and cropped.size > 0:
+            if DEBUG_MODE:
+                debug_path = os.path.join(DEBUG_AVAILABLE_DIR, f"available_{idx}.png")
+                cv2.imwrite(debug_path, cropped)
+            
             results = recognize_hero_from_crop(cropped, f"available_{idx}", zone_type="normal")
             if results and results[0]["similarity"] > 60:
                 hero_name = results[0]["hero"]
