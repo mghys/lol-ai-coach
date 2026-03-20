@@ -148,31 +148,29 @@ class HeroRecognizer:
         
         return cv2.resize(cropped, (100, 100))
     
-    def recognize(self, image_path, top_n=1):
+    def recognize(self, image_path, top_n=1, zone_type="normal"):
         input_img = cv2.imread(image_path)
         if input_img is None:
             return []
         
         template_normal = self._prepare_template(input_img)
-        
         results = {}
         
         for hero_name, template in self.normal_templates.items():
             similarity = self._compute_similarity(template_normal, template)
             results[hero_name] = similarity
         
-        best_normal = max(results.values()) if results else 0
-        
-        if best_normal < 0.6:
-            processed_img = self._extract_80px_circle(input_img)
-            
-            if processed_img is not None:
-                for hero_name, template in self.checked_templates.items():
-                    similarity = self._compute_similarity(processed_img, template)
-                    if hero_name in results:
-                        results[hero_name] = max(results[hero_name], similarity)
-                    else:
-                        results[hero_name] = similarity
+        if zone_type == "selected":
+            best_normal = max(results.values()) if results else 0
+            if best_normal < 0.6:
+                processed_img = self._extract_80px_circle(input_img)
+                if processed_img is not None:
+                    for hero_name, template in self.checked_templates.items():
+                        similarity = self._compute_similarity(processed_img, template)
+                        if hero_name in results:
+                            results[hero_name] = max(results[hero_name], similarity)
+                        else:
+                            results[hero_name] = similarity
         
         sorted_results = [
             {"hero": name, "similarity": round(sim * 100, 1)}
@@ -193,6 +191,6 @@ def get_hero_recognizer():
         print("英雄识别器初始化完成")
     return hero_recognizer
 
-def recognize_hero(image_path):
+def recognize_hero(image_path, zone_type="normal"):
     recognizer = get_hero_recognizer()
-    return recognizer.recognize(image_path)
+    return recognizer.recognize(image_path, zone_type=zone_type)
