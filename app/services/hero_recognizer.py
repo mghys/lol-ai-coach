@@ -120,7 +120,7 @@ class HeroRecognizer:
         else:
             orb_sim = 0
         
-        similarity = phash_sim * 0.4 + hist_sim * 0.3 + orb_sim * 0.3
+        similarity = phash_sim * 0.4 + hist_sim * 0.2 + orb_sim * 0.4
         
         return similarity
     
@@ -156,11 +156,15 @@ class HeroRecognizer:
         template_normal = self._prepare_template(input_img)
         results = {}
         
-        for hero_name, template in self.normal_templates.items():
-            similarity = self._compute_similarity(template_normal, template)
-            results[hero_name] = similarity
-        
-        if zone_type == "selected":
+        if zone_type == "normal":
+            for hero_name, template in self.normal_templates.items():
+                similarity = self._compute_similarity(template_normal, template)
+                results[hero_name] = similarity
+        elif zone_type == "selected":
+            for hero_name, template in self.normal_templates.items():
+                similarity = self._compute_similarity(template_normal, template)
+                results[hero_name] = similarity
+            
             processed_img = self._extract_80px_circle(input_img)
             if processed_img is not None:
                 for hero_name, template in self.checked_templates.items():
@@ -176,6 +180,11 @@ class HeroRecognizer:
         ]
         
         sorted_results.sort(key=lambda x: x["similarity"], reverse=True)
+        
+        if zone_type == "normal" and sorted_results:
+            max_similarity = sorted_results[0]["similarity"]
+            if max_similarity < 50:
+                return [{"hero": "empty", "similarity": 0}]
         
         return sorted_results[:top_n]
 
