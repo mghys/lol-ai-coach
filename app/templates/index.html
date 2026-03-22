@@ -62,6 +62,13 @@
         .debug-area img { max-width: 100%; cursor: crosshair; border-radius: 8px; }
         .coord-display { margin-top: 15px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; font-family: monospace; }
         .coord-display span { color: #f0c419; font-weight: bold; }
+        
+        .ocr-result { text-align: left; }
+        .ocr-text-item { background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #f0c419; }
+        .ocr-text-item .text { font-size: 1rem; margin-bottom: 5px; }
+        .ocr-text-item .confidence { font-size: 0.8rem; color: #888; }
+        .ocr-text-item .position { font-size: 0.75rem; color: #666; font-family: monospace; }
+        .no-text { text-align: center; color: #888; padding: 30px; }
     </style>
 </head>
 <body>
@@ -75,6 +82,7 @@
             <div class="tab" onclick="switchTab('hero')">英雄识别</div>
             <div class="tab" onclick="switchTab('pick')">选人识别</div>
             <div class="tab" onclick="switchTab('game')">对局结果</div>
+            <div class="tab" onclick="switchTab('ocr')">文字识别</div>
             <div class="tab" onclick="switchTab('debug')">坐标调试</div>
         </div>
         
@@ -169,6 +177,24 @@
             </div>
         </div>
         
+        <div id="ocr-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传图片，识别其中的文字（支持中文、英文、日文）</p>
+                <div class="upload-area" onclick="document.getElementById('ocr-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="ocr-upload-text">点击上传图片</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="ocr-file-input" accept="image/*">
+                </div>
+                <button class="btn btn-primary" onclick="recognizeText()">识别文字</button>
+                
+                <div class="ocr-result" id="ocr-result" style="display: none; margin-top: 20px;">
+                    <div class="ocr-summary" id="ocr-summary" style="background: rgba(240, 196, 25, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;"></div>
+                    <div class="ocr-texts" id="ocr-texts"></div>
+                </div>
+            </div>
+        </div>
+        
         <div class="loading" id="hero-loading">
             <p>🔄 正在识别...</p>
         </div>
@@ -180,6 +206,10 @@
         <div class="loading" id="game-loading">
             <p>🔄 正在分析对局截图...</p>
         </div>
+        
+        <div class="loading" id="ocr-loading">
+            <p>🔄 正在识别文字...</p>
+        </div>
     </div>
     
     <script>
@@ -187,7 +217,7 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            const tabMap = { 'hero': 1, 'pick': 2, 'game': 3, 'debug': 4 };
+            const tabMap = { 'hero': 1, 'pick': 2, 'game': 3, 'ocr': 4, 'debug': 5 };
             const tabElement = document.querySelector(`.tab:nth-child(${tabMap[tabName]})`);
             if (tabElement) tabElement.classList.add('active');
             
@@ -417,6 +447,71 @@
             document.getElementById('coord-x').textContent = x;
             document.getElementById('coord-y').textContent = y;
             document.getElementById('coord-display').style.display = 'block';
+        }
+        
+        document.getElementById('ocr-file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('ocr-upload-text').textContent = '已选择: ' + e.target.files[0].name;
+            }
+        });
+        
+        async function recognizeText() {
+            const fileInput = document.getElementById('ocr-file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择图片');
+                return;
+            }
+            
+            document.getElementById('ocr-loading').classList.add('active');
+            document.getElementById('ocr-result').style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/ocr-recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayOCRResult(data);
+                    document.getElementById('ocr-result').style.display = 'block';
+                } else {
+                    alert('识别失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('识别失败: ' + error.message);
+            } finally {
+                document.getElementById('ocr-loading').classList.remove('active');
+            }
+        }
+        
+        function displayOCRResult(data) {
+            const summary = document.getElementById('ocr-summary');
+            summary.innerHTML = `共识别出 <strong style="color: #f0c419">${data.count}</strong> 处文字`;
+            
+            const textsContainer = document.getElementById('ocr-texts');
+            textsContainer.innerHTML = '';
+            
+            if (data.texts && data.texts.length > 0) {
+                data.texts.forEach((item, index) => {
+                    const textItem = document.createElement('div');
+                    textItem.className = 'ocr-text-item';
+                    textItem.innerHTML = `
+                        <div class="text">${index + 1}. ${item.text}</div>
+                        <div class="confidence">置信度: ${item.confidence}%</div>
+                        <div class="position">位置: (${item.bbox.x1}, ${item.bbox.y1}) → (${item.bbox.x2}, ${item.bbox.y2})</div>
+                    `;
+                    textsContainer.appendChild(textItem);
+                });
+            } else {
+                textsContainer.innerHTML = '<div class="no-text">未识别到文字</div>';
+            }
         }
     </script>
 </body>
