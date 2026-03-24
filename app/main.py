@@ -96,3 +96,20 @@ async def recognize_text_from_image(file: UploadFile = File(...)):
     results = recognize_general_text(file_path)
 
     return results
+
+
+@app.post("/player-id-recognize")
+async def recognize_player_id(file: UploadFile = File(...)):
+    file_ext = os.path.splitext(file.filename or "")[1]
+    filename = f"playerid_{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    from app.services.pick_phase_service import recognize_player_ids
+
+    results = recognize_player_ids(file_path)
+
+    return {"success": True, "player_ids": results.get("player_ids", [])}

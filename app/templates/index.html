@@ -81,6 +81,7 @@
         <div class="tabs">
             <div class="tab" onclick="switchTab('hero')">英雄识别</div>
             <div class="tab" onclick="switchTab('pick')">选人识别</div>
+            <div class="tab" onclick="switchTab('playerid')">玩家ID</div>
             <div class="tab" onclick="switchTab('game')">对局结果</div>
             <div class="tab" onclick="switchTab('ocr')">文字识别</div>
             <div class="tab" onclick="switchTab('debug')">坐标调试</div>
@@ -125,6 +126,26 @@
                     <div class="team-section" style="margin-top: 20px;">
                         <div class="team-title" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">可选英雄</div>
                         <div id="available-list" class="heroes-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="playerid-tab" class="tab-content">
+            <div class="card">
+                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传选人界面截图，识别我方5个玩家的ID名称</p>
+                <div class="upload-area" onclick="document.getElementById('playerid-file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <p id="playerid-upload-text">点击上传选人界面截图</p>
+                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
+                    <input type="file" id="playerid-file-input" accept="image/*">
+                </div>
+                <button class="btn btn-primary" onclick="recognizePlayerId()">识别玩家ID</button>
+                
+                <div class="pick-result" id="playerid-result" style="display: none;">
+                    <div class="team-section" style="margin-top: 20px;">
+                        <div class="team-title">我方玩家</div>
+                        <div id="playerid-list"></div>
                     </div>
                 </div>
             </div>
@@ -210,6 +231,10 @@
         <div class="loading" id="ocr-loading">
             <p>🔄 正在识别文字...</p>
         </div>
+        
+        <div class="loading" id="playerid-loading">
+            <p>🔄 正在识别玩家ID...</p>
+        </div>
     </div>
     
     <script>
@@ -217,7 +242,7 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            const tabMap = { 'hero': 1, 'pick': 2, 'game': 3, 'ocr': 4, 'debug': 5 };
+            const tabMap = { 'hero': 1, 'pick': 2, 'playerid': 3, 'game': 4, 'ocr': 5, 'debug': 6 };
             const tabElement = document.querySelector(`.tab:nth-child(${tabMap[tabName]})`);
             if (tabElement) tabElement.classList.add('active');
             
@@ -511,6 +536,84 @@
                 });
             } else {
                 textsContainer.innerHTML = '<div class="no-text">未识别到文字</div>';
+            }
+        }
+        
+        document.getElementById('playerid-file-input').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('playerid-upload-text').textContent = '已选择: ' + e.target.files[0].name;
+            }
+        });
+        
+        async function recognizePlayerId() {
+            const fileInput = document.getElementById('playerid-file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请先选择选人界面截图');
+                return;
+            }
+            
+            document.getElementById('playerid-loading').classList.add('active');
+            document.getElementById('playerid-result').style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/player-id-recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPlayerIdResult(data);
+                    document.getElementById('playerid-result').style.display = 'block';
+                } else {
+                    alert('识别失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('识别失败: ' + error.message);
+            } finally {
+                document.getElementById('playerid-loading').classList.remove('active');
+            }
+        }
+        
+        function displayPlayerIdResult(data) {
+            const listContainer = document.getElementById('playerid-list');
+            listContainer.innerHTML = '';
+            
+            if (data.player_ids && data.player_ids.length > 0) {
+                data.player_ids.forEach((player, index) => {
+                    const playerCard = document.createElement('div');
+                    playerCard.className = 'player-card';
+                    
+                    let statusClass = '';
+                    let statusText = '';
+                    if (player.status === 'not_configured') {
+                        statusClass = 'color: #888;';
+                        statusText = '(未配置坐标)';
+                    } else if (player.status === 'not_detected') {
+                        statusClass = 'color: #ef4444;';
+                        statusText = '(未检测到)';
+                    } else {
+                        statusClass = 'color: #4ade80;';
+                        statusText = '(已识别)';
+                    }
+                    
+                    playerCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <span style="font-weight: bold;">玩家${index + 1}</span>
+                            <span style="${statusClass}">${player.name || '(空)'}</span>
+                            <span style="color: #888; font-size: 0.9rem;">${statusText}</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(playerCard);
+                });
+            } else {
+                listContainer.innerHTML = '<div class="no-data">未识别到玩家信息</div>';
             }
         }
     </script>
