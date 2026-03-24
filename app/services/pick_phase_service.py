@@ -4,7 +4,6 @@ import numpy as np
 from difflib import SequenceMatcher
 from app.services.hero_recognizer import recognize_hero
 from app.services.general_ocr_service import recognize_general_text
-from app.services.ocr_service import process_screenshot
 
 
 PLAYER_NAME_CANDIDATES = [
@@ -49,12 +48,6 @@ def match_text(ocr_text, candidates):
                 return candidate, ratio
 
     return None, 0
-
-
-DEBUG_MODE = True
-DEBUG_PLAYER_ID_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "data", "debug_player_id"
-)
 
 
 PICK_PHASE_POSITIONS = {
@@ -184,9 +177,6 @@ def recognize_player_ids(image_path: str) -> dict:
     if image is None:
         return {"player_ids": []}
 
-    if DEBUG_MODE:
-        os.makedirs(DEBUG_PLAYER_ID_DIR, exist_ok=True)
-
     reader_zh = easyocr.Reader(
         ["ch_sim", "en"],
         gpu=False,
@@ -212,9 +202,6 @@ def recognize_player_ids(image_path: str) -> dict:
         cropped = crop_hero_icon(image, pos["x"], pos["y"], pos["w"], pos["h"])
         if cropped is not None and cropped.size > 0:
             processed = preprocess_player_id_image(cropped)
-
-            debug_path = os.path.join(DEBUG_PLAYER_ID_DIR, f"player_id_{idx}.png")
-            cv2.imwrite(debug_path, processed)
 
             all_results = []
 

@@ -35,28 +35,31 @@
         .loading { text-align: center; padding: 40px; display: none; }
         .loading.active { display: block; }
         
-        .game-result { padding: 30px; display: none; }
-        .game-result.active { display: block; }
-        .win-banner { font-size: 2rem; font-weight: bold; margin-bottom: 20px; padding: 20px; border-radius: 12px; text-align: center; }
-        .win-banner.victory { background: linear-gradient(90deg, #4ade80, #22c55e); color: #1a1a2e; }
-        .win-banner.defeat { background: linear-gradient(90deg, #ef4444, #dc2626); color: #fff; }
-        .team-section { margin-top: 20px; }
-        .team-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 8px; text-align: center; }
-        .ally-team .team-title { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
-        .enemy-team .team-title { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        .player-card { background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .player-champion { font-weight: bold; color: #f0c419; flex: 1; }
-        .player-kda { color: #888; flex: 1; text-align: right; }
-        .player-kda .kills { color: #4ade80; }
-        .player-kda .deaths { color: #ef4444; }
-        .player-kda .assists { color: #60a5fa; }
         .no-data { text-align: center; color: #888; padding: 20px; }
         
         .pick-result { padding: 20px; }
-        .heroes-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .hero-badge { background: rgba(240, 196, 25, 0.2); color: #f0c419; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; }
-        .blue-team .team-title { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .red-team .team-title { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .heroes-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .hero-badge { background: linear-gradient(135deg, rgba(240, 196, 25, 0.3), rgba(255, 107, 107, 0.3)); color: #f0c419; padding: 10px 18px; border-radius: 25px; font-size: 0.95rem; border: 1px solid rgba(240, 196, 25, 0.3); transition: all 0.3s; }
+        .hero-badge:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(240, 196, 25, 0.3); }
+        
+        .result-section { margin-top: 25px; padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .result-section .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .result-section .section-title .icon { font-size: 1.3rem; }
+        
+        .selected-heroes { display: flex; flex-wrap: wrap; gap: 12px; }
+        .selected-hero-item { display: flex; align-items: center; gap: 10px; background: rgba(59, 130, 246, 0.15); padding: 8px 16px; border-radius: 25px; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .selected-hero-item.blue { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); }
+        .selected-hero-item.red { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
+        
+        .player-id-list { display: flex; flex-direction: column; gap: 10px; }
+        .player-id-card { display: flex; align-items: center; gap: 15px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s; }
+        .player-id-card:hover { transform: translateX(5px); border-color: rgba(240, 196, 25, 0.3); }
+        .player-index { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f0c419, #ff6b6b); color: #1a1a2e; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+        .player-id-name { flex: 1; font-size: 1.1rem; font-weight: 500; }
+        .player-id-status { padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; }
+        .player-id-status.success { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .player-id-status.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .player-id-status.pending { background: rgba(136, 136, 136, 0.2); color: #888; }
         
         .debug-area { text-align: center; overflow: auto; max-height: 90vh; }
         .debug-area img { max-width: 100%; cursor: crosshair; border-radius: 8px; }
@@ -82,7 +85,6 @@
             <div class="tab" onclick="switchTab('hero')">英雄识别</div>
             <div class="tab" onclick="switchTab('pick')">选人识别</div>
             <div class="tab" onclick="switchTab('playerid')">玩家ID</div>
-            <div class="tab" onclick="switchTab('game')">对局结果</div>
             <div class="tab" onclick="switchTab('ocr')">文字识别</div>
             <div class="tab" onclick="switchTab('debug')">坐标调试</div>
         </div>
@@ -118,13 +120,13 @@
                 <button class="btn btn-primary" onclick="recognizePickPhase()">识别选人阶段</button>
                 
                 <div class="pick-result" id="pick-result" style="display: none;">
-                    <div class="team-section blue-team" style="margin-top: 20px;">
-                        <div class="team-title">已选英雄</div>
-                        <div id="blue-team-list"></div>
+                    <div class="result-section">
+                        <div class="section-title"><span class="icon">✅</span> 已选英雄</div>
+                        <div id="blue-team-list" class="selected-heroes"></div>
                     </div>
                     
-                    <div class="team-section" style="margin-top: 20px;">
-                        <div class="team-title" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">可选英雄</div>
+                    <div class="result-section">
+                        <div class="section-title"><span class="icon">🎯</span> 可选英雄</div>
                         <div id="available-list" class="heroes-grid"></div>
                     </div>
                 </div>
@@ -143,9 +145,9 @@
                 <button class="btn btn-primary" onclick="recognizePlayerId()">识别玩家ID</button>
                 
                 <div class="pick-result" id="playerid-result" style="display: none;">
-                    <div class="team-section" style="margin-top: 20px;">
-                        <div class="team-title">我方玩家</div>
-                        <div id="playerid-list"></div>
+                    <div class="result-section">
+                        <div class="section-title"><span class="icon">👥</span> 我方玩家</div>
+                        <div id="playerid-list" class="player-id-list"></div>
                     </div>
                 </div>
             </div>
@@ -167,33 +169,6 @@
                 
                 <div class="coord-display" id="coord-display" style="display: none;">
                     点击坐标: X=<span id="coord-x">0</span>, Y=<span id="coord-y">0</span>
-                </div>
-            </div>
-        </div>
-        
-        <div id="game-tab" class="tab-content">
-            <div class="card">
-                <p style="text-align: center; margin-bottom: 20px; color: #888;">上传对局结束截图，自动提取胜负结果、英雄和KDA</p>
-                <div class="upload-area" onclick="document.getElementById('game-file-input').click()">
-                    <div class="upload-icon">📁</div>
-                    <p id="game-upload-text">点击上传对局结束截图</p>
-                    <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 JPG, PNG 格式</p>
-                    <input type="file" id="game-file-input" accept="image/*">
-                </div>
-                <button class="btn btn-primary" onclick="recognizeGameResult()">识别对局结果</button>
-                
-                <div class="game-result" id="game-result">
-                    <div class="win-banner" id="win-banner"></div>
-                    
-                    <div class="team-section ally-team">
-                        <div class="team-title">友方队伍</div>
-                        <div id="ally-team-list"></div>
-                    </div>
-                    
-                    <div class="team-section enemy-team" style="margin-top: 20px;">
-                        <div class="team-title">敌方队伍</div>
-                        <div id="enemy-team-list"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -224,10 +199,6 @@
             <p>🔄 正在分析选人界面...</p>
         </div>
         
-        <div class="loading" id="game-loading">
-            <p>🔄 正在分析对局截图...</p>
-        </div>
-        
         <div class="loading" id="ocr-loading">
             <p>🔄 正在识别文字...</p>
         </div>
@@ -242,7 +213,7 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            const tabMap = { 'hero': 1, 'pick': 2, 'playerid': 3, 'game': 4, 'ocr': 5, 'debug': 6 };
+            const tabMap = { 'hero': 1, 'pick': 2, 'playerid': 3, 'ocr': 4, 'debug': 5 };
             const tabElement = document.querySelector(`.tab:nth-child(${tabMap[tabName]})`);
             if (tabElement) tabElement.classList.add('active');
             
@@ -333,114 +304,17 @@
             const blueList = document.getElementById('blue-team-list');
             blueList.innerHTML = data.blue_side && data.blue_side.length > 0 
                 ? data.blue_side.map(h => `<span class="hero-badge">${h}</span>`).join('')
-                : '<div class="no-data">未识别到已选英雄</div>';
+                : '<div class="no-data">暂无已选英雄</div>';
             
             const availableList = document.getElementById('available-list');
             availableList.innerHTML = data.available_heroes && data.available_heroes.length > 0
                 ? data.available_heroes.map(h => `<span class="hero-badge">${h}</span>`).join('')
-                : '<div class="no-data">未识别到可选英雄</div>';
+                : '<div class="no-data">暂无可选英雄</div>';
         }
         
         document.getElementById('pick-file-input').addEventListener('change', function(e) {
             if (e.target.files[0]) {
                 document.getElementById('pick-upload-text').textContent = '已选择: ' + e.target.files[0].name;
-            }
-        });
-        
-        async function recognizeGameResult() {
-            const fileInput = document.getElementById('game-file-input');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('请先选择对局结束截图');
-                return;
-            }
-            
-            document.getElementById('game-loading').classList.add('active');
-            document.getElementById('game-result').classList.remove('active');
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/game-result-recognize', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayGameResult(data);
-                    document.getElementById('game-result').classList.add('active');
-                } else {
-                    alert('识别失败: ' + (data.error || '未知错误'));
-                }
-            } catch (error) {
-                alert('识别失败: ' + error.message);
-            } finally {
-                document.getElementById('game-loading').classList.remove('active');
-            }
-        }
-        
-        function displayGameResult(data) {
-            const winBanner = document.getElementById('win-banner');
-            if (data.win === true) {
-                winBanner.textContent = '胜利!';
-                winBanner.className = 'win-banner victory';
-            } else if (data.win === false) {
-                winBanner.textContent = '失败';
-                winBanner.className = 'win-banner defeat';
-            } else {
-                winBanner.textContent = '胜负未识别';
-                winBanner.className = 'win-banner';
-                winBanner.style.background = 'rgba(255, 255, 255, 0.1)';
-            }
-            
-            const allyList = document.getElementById('ally-team-list');
-            allyList.innerHTML = '';
-            if (data.ally_team && data.ally_team.length > 0) {
-                data.ally_team.forEach(player => {
-                    const playerCard = createPlayerCard(player);
-                    allyList.appendChild(playerCard);
-                });
-            } else {
-                allyList.innerHTML = '<div class="no-data">未识别到友方队伍信息</div>';
-            }
-            
-            const enemyList = document.getElementById('enemy-team-list');
-            enemyList.innerHTML = '';
-            if (data.enemy_team && data.enemy_team.length > 0) {
-                data.enemy_team.forEach(player => {
-                    const playerCard = createPlayerCard(player);
-                    enemyList.appendChild(playerCard);
-                });
-            } else {
-                enemyList.innerHTML = '<div class="no-data">未识别到敌方队伍信息</div>';
-            }
-        }
-        
-        function createPlayerCard(player) {
-            const card = document.createElement('div');
-            card.className = 'player-card';
-            
-            const champion = document.createElement('div');
-            champion.className = 'player-champion';
-            champion.textContent = player.champion || '未识别';
-            
-            const kda = document.createElement('div');
-            kda.className = 'player-kda';
-            kda.innerHTML = `<span class="kills">${player.kills || 0}</span> / <span class="deaths">${player.deaths || 0}</span> / <span class="assists">${player.assists || 0}</span>`;
-            
-            card.appendChild(champion);
-            card.appendChild(kda);
-            
-            return card;
-        }
-        
-        document.getElementById('game-file-input').addEventListener('change', function(e) {
-            if (e.target.files[0]) {
-                document.getElementById('game-upload-text').textContent = '已选择: ' + e.target.files[0].name;
             }
         });
         
@@ -587,30 +461,27 @@
             
             if (data.player_ids && data.player_ids.length > 0) {
                 data.player_ids.forEach((player, index) => {
-                    const playerCard = document.createElement('div');
-                    playerCard.className = 'player-card';
-                    
-                    let statusClass = '';
-                    let statusText = '';
+                    let statusClass = 'pending';
+                    let statusText = '等待识别';
                     if (player.status === 'not_configured') {
-                        statusClass = 'color: #888;';
-                        statusText = '(未配置坐标)';
+                        statusClass = 'error';
+                        statusText = '未配置';
                     } else if (player.status === 'not_detected') {
-                        statusClass = 'color: #ef4444;';
-                        statusText = '(未检测到)';
-                    } else {
-                        statusClass = 'color: #4ade80;';
-                        statusText = '(已识别)';
+                        statusClass = 'error';
+                        statusText = '未检测到';
+                    } else if (player.status === 'recognized') {
+                        statusClass = 'success';
+                        statusText = '已识别';
                     }
                     
-                    playerCard.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <span style="font-weight: bold;">玩家${index + 1}</span>
-                            <span style="${statusClass}">${player.name || '(空)'}</span>
-                            <span style="color: #888; font-size: 0.9rem;">${statusText}</span>
+                    const html = `
+                        <div class="player-id-card">
+                            <div class="player-index">${index + 1}</div>
+                            <div class="player-id-name">${player.name || '未识别'}</div>
+                            <div class="player-id-status ${statusClass}">${statusText}</div>
                         </div>
                     `;
-                    listContainer.appendChild(playerCard);
+                    listContainer.innerHTML += html;
                 });
             } else {
                 listContainer.innerHTML = '<div class="no-data">未识别到玩家信息</div>';
