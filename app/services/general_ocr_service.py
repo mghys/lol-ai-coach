@@ -13,14 +13,14 @@ class GeneralOCRService:
             ["ch_sim", "en"],
             gpu=False,
             verbose=False,
-            model_storage_directory="data/easyocr_model",
+            model_storage_directory="easyocr_model",
         )
         print("加载 EasyOCR 日文模型...")
         self.reader_ja = easyocr.Reader(
             ["ja", "en"],
             gpu=False,
             verbose=False,
-            model_storage_directory="data/easyocr_model",
+            model_storage_directory="easyocr_model",
         )
         print("OCR 引擎加载完成")
 

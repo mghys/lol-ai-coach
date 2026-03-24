@@ -181,13 +181,13 @@ def recognize_player_ids(image_path: str) -> dict:
         ["ch_sim", "en"],
         gpu=False,
         verbose=False,
-        model_storage_directory="data/easyocr_model",
+        model_storage_directory="easyocr_model",
     )
     reader_ja = easyocr.Reader(
         ["ja", "en"],
         gpu=False,
         verbose=False,
-        model_storage_directory="data/easyocr_model",
+        model_storage_directory="easyocr_model",
     )
 
     player_ids = []
